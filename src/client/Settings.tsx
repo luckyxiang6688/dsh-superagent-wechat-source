@@ -180,7 +180,7 @@ export function Settings(): ReactElement {
       <div style={styles.card}>
         <span style={styles.title}>怎么用</span>
         <div style={styles.hint}>
-          1. 扫码后在微信「我 → 设置 → 插件 → 微信ClawBot」里找到这个机器人，点进去扫描连接。<br />
+          1. 在微信「我 → 设置 → 插件 → 微信ClawBot」里点进去，用「扫一扫」扫描上面的二维码完成连接。<br />
           2. 直接发消息就行，比如「修一下登录页的错别字」；主控按接单规则判断是否建单。<br />
           3. 建单时回一条接单确认，跑完再把结果回帖到同一个对话。<br />
           4. superagent 需要先配好 GitHub 仓库和 gh 登录，否则工单不会执行。<br />
