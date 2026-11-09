@@ -5,6 +5,8 @@
  * and serves the settings-page API. Runtime imports stay free of
  * `@deepseek-ai/*`: the host is reached through the `orchestrator` service.
  */
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { Account } from './account.ts'
 import { wechatKind } from './kind.ts'
 import { registerRoutes, type WebServerLike } from './routes.ts'
@@ -28,18 +30,17 @@ interface ContextLike {
   logger?: { warn(message: string): void }
 }
 
+/** Where account state goes when the profile does not point at dsh-superagent's stateDir. */
+export const DEFAULT_STATE_DIR = join(homedir(), '.dsh-superagent-wechat')
+
 export interface PluginConfig {
-  /** dsh-superagent's stateDir; account state lives under `<stateDir>/sources/wechat`. */
+  /** Account state lives under `<stateDir>/sources/wechat`; defaults to `DEFAULT_STATE_DIR`. */
   stateDir?: string
   historyLimit?: number
 }
 
 export function apply(ctx: ContextLike, config: PluginConfig = {}): void {
-  const stateDir = typeof config.stateDir === 'string' ? config.stateDir : ''
-  if (!stateDir) {
-    ctx.logger?.warn('[wechat-source] 未配置 stateDir，来源未启动')
-    return
-  }
+  const stateDir = typeof config.stateDir === 'string' && config.stateDir ? config.stateDir : DEFAULT_STATE_DIR
   const source = { kind: wechatKind.kind, health: wechatKind.health }
   const account = new Account({
     stateDir,

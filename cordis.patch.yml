@@ -1,0 +1,8 @@
+# dsh-superagent-wechat-source bundle layer: mounts the WeChat Source.
+#
+# `stateDir` is optional. Without it the plugin keeps its account state in
+# ~/.dsh-superagent-wechat. Point it at dsh-superagent's stateDir when you want
+# the Source's state to sit next to the orchestrator's.
+- insert:
+    - id: dsh-superagent-wechat-source
+      name: dsh-superagent-wechat-source

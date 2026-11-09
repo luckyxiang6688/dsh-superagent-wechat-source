@@ -1,7 +1,7 @@
 {
   "name": "dsh-superagent-wechat-source",
   "version": "0.1.0",
-  "description": "Personal WeChat (iLink ClawBot) as a dsh-superagent Source: send /task in a DM, get the result back in the same chat.",
+  "description": "Personal WeChat (iLink ClawBot) as a dsh-superagent Source: DM your bot, it decides whether the message is work, and the result comes back in the same chat.",
   "type": "module",
   "scripts": {
     "build": "tsdown",
@@ -31,17 +31,39 @@
     "typescript": "^6.0.3"
   },
   "dsh": {
+    "manifestVersion": 1,
     "client": {
       "platform": "web",
       "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
         "@deepseek-ai/dsh-client-ui-slots"
       ]
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
   },
   "license": "MIT",
-  "private": true,
+  "author": "luckyxiang6688",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-superagent",
+    "source",
+    "wechat",
+    "weixin",
+    "ilink",
+    "clawbot",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luckyxiang6688/dsh-superagent-wechat-source.git"
+  },
+  "homepage": "https://github.com/luckyxiang6688/dsh-superagent-wechat-source#readme",
   "files": [
     "lib",
+    "cordis.patch.yml",
     "README.md",
     "NOTICE.md",
     "LICENSE",

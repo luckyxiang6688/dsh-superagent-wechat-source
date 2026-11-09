@@ -4,7 +4,7 @@
 
 面向**独立开发者自用**：不需要组织账号、不需要企业微信/飞书。
 
-> 状态：M0–M3 完成（传输、来源契约、登录、设置页、单测）；M4 实机端到端等待扫码验证。
+> 状态：传输、来源契约、登录、设置页、单测与实机端到端均已验证（扫码绑定 → 入站 → 裁定 → 工单 → 回帖）。
 
 ## 它是什么
 
@@ -28,17 +28,15 @@ npm run build
 dsh plugin --profile superagent add "link:$PWD"
 ```
 
-然后在 profile 的 `cordis.patch.yml` 里挂载（`stateDir` 与 dsh-superagent 用同一个）：
+插件自带的 `cordis.patch.yml` 会在 profile 的 `bundles` 里出现时自动挂载，不需要手写 insert。**状态目录默认 `~/.dsh-superagent-wechat`**；想跟 dsh-superagent 的 state 放在一起，就在 profile 的 `cordis.patch.yml` 里覆盖：
 
 ```yaml
-- insert:
-    - id: dsh-superagent-wechat-source
-      name: dsh-superagent-wechat-source
-      config:
-        stateDir: /absolute/path/to/superagent-state
+- id: dsh-superagent-wechat-source
+  config:
+    stateDir: /absolute/path/to/superagent-state
 ```
 
-重启 DSH，打开 **设置 → 微信任务**，用微信扫码。扫码后可能出现数字校验，按手机提示输入即可。
+重启 DSH，打开 **设置 → 微信任务**，在微信「我 → 设置 → 插件 → 微信ClawBot」里点进去用「扫一扫」扫码连接。扫码后可能出现数字校验，按手机提示输入即可。
 
 登录成功后在同一个设置页可以看到：
 
