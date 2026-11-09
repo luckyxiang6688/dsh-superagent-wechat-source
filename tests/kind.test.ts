@@ -21,9 +21,10 @@ test('channel only accepts an address with a user', () => {
   assert.equal(wechatKind.channel.allowed({}, WechatConfigSchema.parse({})), false)
 })
 
-test('the kind declares one health entry and the direct admission row ignores everything', () => {
+test('the kind declares one health entry and no admission table', () => {
   assert.deepEqual(wechatKind.health, ['wechat'])
-  const rows = wechatKind.policy.rows!({})
-  assert.equal(rows.length, 1)
-  assert.deepEqual(rows[0]!.cells, { listedUnaddressed: false, unlistedAddressed: false, unlistedUnaddressed: false })
+  // A DM is always addressed, so a listed sender is explicit before any
+  // admission cell is consulted; declaring rows would only invent dead config.
+  assert.equal('rows' in wechatKind.policy, false)
+  assert.deepEqual(wechatKind.scope({ meta: { prefixMatched: false } }, WechatConfigSchema.parse({})), { listened: true, observed: false, row: 'direct' })
 })

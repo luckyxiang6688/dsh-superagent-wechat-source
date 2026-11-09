@@ -26,12 +26,13 @@ test('prefix match: addressed direct, prefix stripped, scope listens', () => {
   assert.deepEqual(wechatKind.scope({ meta: trigger.meta }, wechatKind.schema.parse({})), { listened: true, observed: false, row: 'direct' })
 })
 
-test('no prefix: not addressed, text kept, scope filters with a reason', () => {
+test('no prefix: still addressed (a DM addresses the bot), text kept, scope listens', () => {
   const trigger = toTrigger(message({ item_list: [{ type: 1, text_item: { text: '今天天气不错' } }] }))
   assert.ok(trigger)
-  assert.equal(trigger.addressed, undefined)
+  assert.equal(trigger.addressed, 'direct')
   assert.equal(trigger.text, '今天天气不错')
-  assert.deepEqual(wechatKind.scope({ meta: trigger.meta }, wechatKind.schema.parse({})), { listened: false, reason: 'no_task_prefix' })
+  assert.equal(trigger.meta.prefixMatched, false)
+  assert.deepEqual(wechatKind.scope({ meta: trigger.meta }, wechatKind.schema.parse({})), { listened: true, observed: false, row: 'direct' })
 })
 
 test('prefix is case-insensitive and tolerates a Chinese colon', () => {

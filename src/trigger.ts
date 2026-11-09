@@ -5,8 +5,9 @@ import { MessageItemType, type WeixinMessage } from './ilink/types.ts'
 export const SOURCE = 'wechat'
 
 /**
- * `/task` at the start of a DM creates work. Everything else is recorded but
- * filtered (scope returns `no_task_prefix`), so the trace shows the drop.
+ * `/task` is optional. A DM to the bot is already addressed to it (see the
+ * Source contract's `addressed: 'direct'`), so every message is a candidate and
+ * the Policy decides whether it is work. The prefix is stripped when present.
  */
 export const TASK_PREFIX = /^\/task(?:[\s：:，,]+|$)/i
 
@@ -52,7 +53,7 @@ export function toTrigger(message: WeixinMessage, now = Date.now()): Trigger | u
     threads: [{ source: SOURCE, id: thread }],
     actor: { source: SOURCE, id: user },
     human: message.message_type === 1,
-    ...(match ? { addressed: 'direct' as const } : {}),
+    addressed: 'direct' as const,
     at: new Date(atMs).toISOString(),
     text: body,
     channel: { source: SOURCE, thread, address: { user } },

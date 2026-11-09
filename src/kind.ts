@@ -20,8 +20,8 @@ export const wechatKind = {
   kind: SOURCE,
   title: localized('微信私聊', 'WeChat DM'),
   description: localized(
-    '接收你发给自己微信机器人的私聊；以 /task 开头的消息建工单，结果回帖到同一个对话。',
-    'Receives DMs to your own WeChat bot; a message starting with /task opens a ticket and the result is posted back to the same chat.',
+    '接收你发给自己微信机器人的私聊；每条私聊都交给裁定判断是否建单，结果回帖到同一个对话。',
+    'Receives DMs to your own WeChat bot; every DM is assessed for whether it opens a ticket, and results are posted back to the same chat.',
   ),
   schema: WechatConfigSchema,
   fields: [
@@ -34,11 +34,13 @@ export const wechatKind = {
   ],
   health: ['wechat'],
 
-  /** Only `/task …` is listened to; every other DM is recorded and filtered. */
-  scope({ meta }: { meta: Record<string, unknown> }, _config?: WechatConfig): ScopeResult {
-    return meta.prefixMatched === true
-      ? { listened: true, observed: false, row: 'direct' }
-      : { listened: false, reason: 'no_task_prefix' }
+  /**
+   * Every DM to the bot is listened to. The Trigger carries
+   * `addressed: 'direct'`, so a listed sender's message is admitted as an
+   * explicit request and the assessor decides whether it is work.
+   */
+  scope(_input: { meta: Record<string, unknown> }, _config?: WechatConfig): ScopeResult {
+    return { listened: true, observed: false, row: 'direct' }
   },
 
   channel: {
@@ -84,18 +86,17 @@ export const wechatKind = {
     }).strict(),
     fields: [
       { key: 'allowed', type: 'rows' as const, label: localized('能发起任务的微信用户', 'WeChat users who may originate work'),
-        hint: localized('登录后设置页会显示你的 ilink_user_id，复制到这里。只有名单内的人发 /task 才会建单。',
-          'After login the settings page shows your ilink_user_id; copy it here. Only listed users create tickets with /task.'),
+        hint: localized('登录后设置页会显示你的 ilink_user_id，复制到这里。只有名单内的人的私聊会被裁定，名单外的一律忽略。',
+          'After login the settings page shows your ilink_user_id; copy it here. Only listed users’ DMs are assessed; everyone else is ignored.'),
         columns: [
           { key: 'id', type: 'text' as const, label: localized('用户 ID', 'User ID') },
           { key: 'name', type: 'text' as const, label: localized('名字', 'Name'), optional: true },
         ] },
     ],
-    explicit: localized('名单内的人私聊机器人并发 /task，总是明确的请求。', 'A listed user who DMs the bot with /task always makes an explicit request.'),
+    explicit: localized('名单内的人私聊机器人，总是明确的请求；是否属于工作由接单规则判断。',
+      'A listed user who DMs the bot always makes an explicit request; the accept rules decide whether it is work.'),
     unnamed: { person: localized('微信用户', 'WeChat user'), bot: localized('微信机器人', 'WeChat bot') },
-    rows(_stored?: Record<string, unknown>) {
-      return [{ id: 'direct', label: localized('私聊', 'Direct messages'), note: localized('仅 /task', '/task only'),
-        cells: { listedUnaddressed: false, unlistedAddressed: false, unlistedUnaddressed: false } }]
-    },
+    // No admission table: a DM is always addressed, and a listed sender who
+    // addresses the agent is explicit before any table cell is consulted.
   },
 }

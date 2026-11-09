@@ -121,7 +121,7 @@ export function Settings(): ReactElement {
     <div style={styles.section}>
       <div style={styles.card}>
         <div style={styles.row}>
-          <span style={styles.title}>微信私聊 · 任务来源</span>
+          <span style={styles.title}>微信私聊 · superagent 来源</span>
           <span style={{ ...styles.badge, ...badge.style }}>{badge.text}</span>
         </div>
 
@@ -180,9 +180,9 @@ export function Settings(): ReactElement {
       <div style={styles.card}>
         <span style={styles.title}>怎么用</span>
         <div style={styles.hint}>
-          1. 在微信里找到这个机器人，发 <span style={styles.mono}>/task 修一下登录页的错别字</span> 这样的消息建工单。<br />
-          2. 不带 <span style={styles.mono}>/task</span> 的消息不会建单，只在链路里记为「源头丢弃」。<br />
-          3. 接单时回一条确认，跑完再把结果回帖到同一个对话。<br />
+          1. 扫码后在微信「我 → 设置 → 插件 → 微信ClawBot」里找到这个机器人，点进去扫描连接。<br />
+          2. 直接发消息就行，比如「修一下登录页的错别字」；主控按接单规则判断是否建单。<br />
+          3. 建单时回一条接单确认，跑完再把结果回帖到同一个对话。<br />
           4. superagent 需要先配好 GitHub 仓库和 gh 登录，否则工单不会执行。<br />
           5. 连续给同一个人发满 10 条会被微信拦下，等你再发一条消息才恢复；本插件按此计数。
         </div>
