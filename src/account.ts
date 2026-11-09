@@ -189,6 +189,7 @@ export class Account {
           const response = await getUpdates({ ...api(), getUpdatesBuf: this.store.cursor })
           if (signal.aborted) return
           if (response.errcode === -14 || response.ret === -14) {
+            this.error = undefined
             this.deps.report('paused', '会话已失效：暂停一小时后再试')
             await sleep(60 * 60_000, signal)
             try { await notifyStart(api()) } catch { /* retried on the next poll */ }
@@ -197,10 +198,13 @@ export class Account {
           if (response.ret && response.ret !== 0) throw new Error(`getUpdates ret=${response.ret} errmsg=${response.errmsg ?? ''}`)
           failures = 0
           backoff = 5_000
+          // A locally timed-out long poll is a normal idle cycle, not proof the
+          // connection works, so it must not clear an earlier error.
+          if (!response.timedOut) this.error = undefined
           this.lastPollAt = new Date().toISOString()
           if (response.get_updates_buf) this.store.saveCursor(response.get_updates_buf)
           for (const message of response.msgs ?? []) this.ingest(message)
-          this.deps.report('ready', '正在接收微信消息')
+          if (!this.error) this.deps.report('ready', '正在接收微信消息')
         } catch (error) {
           if (signal.aborted) return
           failures += 1

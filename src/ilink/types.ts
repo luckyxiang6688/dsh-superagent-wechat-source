@@ -56,6 +56,11 @@ export interface GetUpdatesResp {
   msgs?: WeixinMessage[]
   get_updates_buf?: string
   longpolling_timeout_ms?: number
+  /**
+   * Set locally, never by the server: the long poll ended on our own timeout
+   * (or abort), so the body is a synthetic empty page rather than a response.
+   */
+  timedOut?: boolean
 }
 
 export interface SendMessageReq {

@@ -137,7 +137,10 @@ export async function getUpdates(options: ApiOptions & { getUpdatesBuf: string; 
     return parseLossless<GetUpdatesResp>(raw)
   } catch (error) {
     if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
-      return { ret: 0, msgs: [], get_updates_buf: options.getUpdatesBuf }
+      // A long poll with no traffic ends this way in normal operation, but it
+      // is not evidence that the connection works: mark it so the caller does
+      // not mistake "no answer" for "answered empty".
+      return { ret: 0, msgs: [], get_updates_buf: options.getUpdatesBuf, timedOut: true }
     }
     throw error
   }

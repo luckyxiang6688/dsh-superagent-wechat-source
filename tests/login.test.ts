@@ -53,6 +53,24 @@ test('binded_redirect means the account is bound elsewhere; no credentials are t
   assert.match(session.state().error ?? '', /另一个客户端/)
 })
 
+test('a QR that keeps expiring gives up after three refreshes', async () => {
+  // get_bot_qrcode, then get_qrcode_status answering "expired", repeated.
+  let qrCalls = 0
+  const { fetch, calls } = fakeFetch(() => {
+    qrCalls += 1
+    return qrCalls % 2 === 1 ? qr : { status: 'expired' }
+  })
+  const session = new LoginSession({
+    localTokenList: () => [],
+    onConfirmed: () => { throw new Error('an expired QR must never confirm') },
+    fetchImpl: fetch,
+  })
+  session.start()
+  await waitFor(() => session.state().phase === 'expired', 5000)
+  assert.match(session.state().error ?? '', /多次失效/)
+  assert.equal(calls.filter(call => call.url.includes('get_bot_qrcode')).length, 4)
+})
+
 test('scaned_but_redirect switches the polling host', async () => {
   const tokens: TokenData[] = []
   let statusCalls = 0

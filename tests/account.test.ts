@@ -103,6 +103,86 @@ test('monitor polls, resets the budget, stores history and hands Trigger to the 
   assert.equal(statSync(join(dir, 'sources', 'wechat', 'sync-buf.json')).mode & 0o777, 0o600)
 })
 
+test('the budget fits exactly ten messages and refuses an over-budget reply whole', async () => {
+  const { fetch, calls } = fakeFetch(() => ({ ret: 0 }))
+  const { account } = seededAccount({ fetchImpl: fetch })
+  account.ingest(inbound('start'))
+  const sends = (): number => calls.filter(call => call.url.endsWith('/ilink/bot/sendmessage')).length
+  for (let index = 0; index < 9; index += 1) await account.sendText('wxid_alice', `m${index}`, `reply-${index}`)
+  // 6000 characters with no natural break split into 4000 + 2000 = two messages.
+  // 9 + 2 exceeds the budget; a per-chunk check would send the first one first.
+  const twoChunks = 'a'.repeat(6000)
+  await assert.rejects(() => account.sendText('wxid_alice', twoChunks, 'reply-over'), /连发上限/)
+  assert.equal(sends(), 9, 'an over-budget reply must not send any of its chunks')
+  await account.sendText('wxid_alice', 'last', 'reply-last')
+  assert.equal(sends(), 10, 'the single message that still fits must go out')
+  await assert.rejects(() => account.sendText('wxid_alice', 'again', 'reply-again'), /连发上限/)
+  assert.equal(sends(), 10)
+})
+
+test('-14 pauses the account for an hour instead of polling again', async () => {
+  const reports: string[] = []
+  const { fetch, calls } = fakeFetch(call => call.url.includes('/ilink/bot/msg/') ? { ret: 0 } : { ret: -14 })
+  const { account } = seededAccount({ fetchImpl: fetch, reports })
+  account.start()
+  await waitFor(() => reports.some(line => line.startsWith('paused:会话已失效')))
+  const polls = (): number => calls.filter(call => call.url.endsWith('/ilink/bot/getupdates')).length
+  const before = polls()
+  await new Promise(resolve => { setTimeout(resolve, 150) })
+  assert.equal(polls(), before, 'a broken session must not be hammered')
+  account.stop()
+})
+
+test('a failed poll is reported and a later success clears the error', async () => {
+  const reports: string[] = []
+  let polls = 0
+  const { fetch } = fakeFetch(async call => {
+    if (call.url.includes('/ilink/bot/msg/')) return { ret: 0 }
+    polls += 1
+    if (polls === 1) throw new Error('网络断开')
+    // Without a pause the fake resolves instantly and the loop starves timers.
+    await new Promise(resolve => { setTimeout(resolve, 10) })
+    return { ret: 0, msgs: [], get_updates_buf: 'buf-back' }
+  })
+  const { account } = seededAccount({ fetchImpl: fetch, reports })
+  account.start()
+  try {
+    await waitFor(() => reports.some(line => line.startsWith('error:')))
+    assert.match(account.status().error ?? '', /网络断开/)
+    // The first retry waits out the 5s backoff.
+    await waitFor(() => reports.some(line => line.startsWith('ready:')), 9000)
+    assert.equal(account.status().error, undefined, 'a recovered account must not keep reporting the old error')
+  } finally {
+    account.stop()
+  }
+})
+
+test('long polls that only ever time out never look healthy', async () => {
+  const reports: string[] = []
+  let polls = 0
+  const { fetch } = fakeFetch(async call => {
+    if (call.url.includes('/ilink/bot/msg/')) return { ret: 0 }
+    polls += 1
+    if (polls === 1) throw new Error('网络断开')
+    await new Promise(resolve => { setTimeout(resolve, 10) })
+    const timeout = new Error('long poll timed out')
+    timeout.name = 'TimeoutError'
+    throw timeout
+  })
+  const { account } = seededAccount({ fetchImpl: fetch, reports })
+  account.start()
+  try {
+    await waitFor(() => reports.some(line => line.startsWith('error:')))
+    // The first retry waits out the 5s backoff; afterwards every "poll" is a
+    // local timeout, which must not be mistaken for a working connection.
+    await waitFor(() => polls >= 4, 9000)
+    assert.match(account.status().error ?? '', /网络断开/)
+    assert.equal(reports.filter(line => line.startsWith('ready:')).length, 0)
+  } finally {
+    account.stop()
+  }
+})
+
 test('a dsh-wechat login on this machine is reported as a conflict', () => {
   const home = tempDir()
   mkdirSync(join(home, '.dsh-wechat', 'auth'), { recursive: true })

@@ -23,3 +23,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # lib/ is committed; a build that differs means the shipped bundle drifted.
+      - run: git diff --exit-code -- lib

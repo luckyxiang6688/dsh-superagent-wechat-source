@@ -61,9 +61,14 @@ export class Store {
     privateDir(this.root)
     const stored = readJson<TokenData>(join(this.root, 'auth', 'token.json'))
     this.tokenData = stored && typeof stored.token === 'string' && stored.token ? stored : undefined
-    this.buffer = readJson<{ buffer: string }>(join(this.root, 'sync-buf.json'))?.buffer ?? ''
-    this.messages = readJson<StoredMessage[]>(join(this.root, 'messages.json')) ?? []
-    this.outbound = readJson<Record<string, OutboundState>>(join(this.root, 'outbound.json')) ?? {}
+    // A truncated or hand-edited file must not take the plugin down: each one
+    // falls back to its empty shape.
+    const cursor = readJson<{ buffer?: unknown }>(join(this.root, 'sync-buf.json'))
+    this.buffer = typeof cursor?.buffer === 'string' ? cursor.buffer : ''
+    const messages = readJson<unknown>(join(this.root, 'messages.json'))
+    this.messages = Array.isArray(messages) ? messages.filter((message): message is StoredMessage => !!message && typeof message === 'object' && typeof (message as StoredMessage).user === 'string') : []
+    const outbound = readJson<unknown>(join(this.root, 'outbound.json'))
+    this.outbound = outbound && typeof outbound === 'object' && !Array.isArray(outbound) ? outbound as Record<string, OutboundState> : {}
   }
 
   get token(): TokenData | undefined { return this.tokenData }
