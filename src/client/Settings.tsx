@@ -1,5 +1,5 @@
 /** Settings → 微信私聊: login state, QR, PIN, relogin/logout, usage notes. */
-import { createElement, Fragment, useCallback, useEffect, useState, type ReactElement } from 'react'
+import { createElement, Fragment, useCallback, useEffect, useRef, useState, type ReactElement } from 'react'
 
 interface LoginState {
   phase: 'idle' | 'waiting' | 'scanned' | 'need_verifycode' | 'confirmed' | 'expired' | 'error' | 'already_bound'
@@ -98,6 +98,18 @@ export function Settings(): ReactElement {
     await refresh()
   }
 
+  // The login loop gives up after a few QR refreshes. When the panel is opened
+  // later and finds it in that terminal state, fetch a fresh code once —
+  // otherwise the user stares at a dead QR until they find the button.
+  const autoRetried = useRef(false)
+  useEffect(() => {
+    if (autoRetried.current || status?.loggedIn) return
+    const current = status?.login.phase
+    if (current !== 'expired' && current !== 'error') return
+    autoRetried.current = true
+    void act('/agent-wechat/api/relogin')
+  }, [status?.loggedIn, status?.login.phase])
+
   const phase = status?.login.phase ?? 'idle'
   const badge = status?.loggedIn
     ? { text: '已登录', style: styles.ok }
@@ -121,7 +133,7 @@ export function Settings(): ReactElement {
           </div>
         )}
 
-        {!status?.loggedIn && qr?.svg && (
+        {!status?.loggedIn && qr?.svg && qr.phase !== 'expired' && qr.phase !== 'error' && qr.phase !== 'already_bound' && (
           <>
             <div style={styles.hint}>
               用微信扫码，把这个机器人绑定到你的个人微信。扫码后可能出现数字校验，按手机提示输入即可。
