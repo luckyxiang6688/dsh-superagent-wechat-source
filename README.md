@@ -20,11 +20,16 @@
 ## 安装
 
 ```bash
+# 装进 superagent profile（profile 名按你的实际配置）
+dsh plugin --profile superagent add dsh-superagent-wechat-source
+```
+
+需要 Node 22.19+ 或 24+。要从源码安装（想改代码时）：
+
+```bash
 cd /path/to/dsh-superagent-wechat-source
 npm install
 npm run build
-
-# 装进 superagent profile（profile 名按你的实际配置）
 dsh plugin --profile superagent add "link:$PWD"
 ```
 
@@ -87,8 +92,10 @@ dsh plugin --profile superagent add "link:$PWD"
 src/
 ├── index.ts        插件入口：注册 kind、启动登录/轮询、挂设置页路由
 ├── kind.ts         SourceKind：配置、scope、policy、channel、threadContext
+├── contract.ts     Source 契约的结构类型（不 import @deepseek-ai/*）
 ├── trigger.ts      iLink 消息 → Trigger（稳定 ID、剥掉可选 /task、群消息丢弃）
 ├── account.ts      账号：登录、长轮询、回帖、预算、状态
+├── runtime.ts      账号单例的存放与读取
 ├── login.ts        扫码状态机（wait/scaned/confirmed/expired/redirect/PIN/binded）
 ├── store.ts        token、游标、消息环、回帖计数（0600 原子写）
 ├── routes.ts       /agent-wechat/api/{status,qr,verify-code,relogin,logout}
